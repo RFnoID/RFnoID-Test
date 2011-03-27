@@ -21,14 +21,15 @@ class our_test(gr.top_block):
         fft_size = 256
         freq1 = 3500
         freq2 = 440
-        self.src0 = gr.sig_source_c (sample_rate, gr.GR_SIN_WAVE, freq1, ampl)
-        self.nse = gr.noise_source_c(gr.GR_GAUSSIAN, 0.1)
+        self.src0 = gr.sig_source_f (sample_rate, gr.GR_SIN_WAVE, freq1, ampl)
+        self.nse = gr.noise_source_f (gr.GR_GAUSSIAN, 0.1)
         #src1 = gr.sig_source_f (sample_rate, gr.GR_SIN_WAVE, freq2, ampl)
         #fft0 = src0
         #fft1 = src1
-        self.add = gr.add_cc()
-        self.thr = gr.throttle(gr.sizeof_gr_complex, 100*fft_size)
-        self.snk = qtgui.sink_c(fft_size, gr.firdes.WIN_BLACKMAN_hARRIS)
+        self.add = gr.add_ff()
+#        self.thr = gr.throttle(gr.sizeof_gr_complex, 100*fft_size)
+#        self.snk = qtgui.sink_c(fft_size, gr.firdes.WIN_BLACKMAN_hARRIS)
+        self.snk = gr.probe_signal_f() 
         mywindow = window.blackmanharris(fft_size)
         fft = gr.fft_vfc(fft_size, True, mywindow)
         power = 0
@@ -44,17 +45,19 @@ class our_test(gr.top_block):
         #self.connect (dst, stv, fft, c2m, fdst)
         self.connect(self.src0, (self.add, 0))
         self.connect(self.nse, (self.add, 1))
-        self.connect(self.add, self.thr, self.snk)
+        self.connect(self.add, self.snk)
         # Tell the sink we want it displayed
-        self.pyobj = sip.wrapinstance(self.snk.pyqwidget(), QtGui.QWidget)
-        self.pyobj.show()
+#        self.pyobj = sip.wrapinstance(self.snk.pyqwidget(), QtGui.QWidget)
+ #       self.pyobj.show()
 
 
 def main():
     ot = our_test()
     ot.start()
-    #raw_input('Press Enter to quit:')    tb = my_tb()
-    ot.qapp.exec_()
+    while 1:
+        print ot.snk.level()
+#        raw_input('Press Enter to quit:')
+#    ot.qapp.exec_()
 
 if __name__ == '__main__':
     try:
