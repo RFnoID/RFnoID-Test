@@ -34,10 +34,13 @@ class our_test(gr.top_block):
         #Make sure it worked 
         print "Using RX dboard %s" % (self.subdev_rx.side_and_name(),)             
 
-adc_rate = self.u_rx.adc_rate() #64 MS/s
-usrp_decim = 1024       
-self.u_rx.set_decim_rate(usrp_decim)
-usrp_rx_rate = adc_rate / usrp_decim    #BW = 64 MS/s / decim = 64,000,000 / 1024 = 62.5kHz  Not sure if this decim rate exceeds USRP capabilities, if it does then some software decim may have to be done as well
+        adc_rate = self.u_rx.adc_rate() #64 MS/s
+        usrp_decim = 1024       
+        self.u_rx.set_decim_rate(usrp_decim)
+        #BW = 64 MS/s / decim = 64,000,000 / 1024 = 62.5kHz
+        #Not sure if this decim rate exceeds USRP capabilities,
+        #if it does then some software decim may have to be done as well
+        usrp_rx_rate = adc_rate / usrp_decim
 
 
         self.src0 = gr.sig_source_f (sample_rate, gr.GR_SIN_WAVE, freq1, ampl)
