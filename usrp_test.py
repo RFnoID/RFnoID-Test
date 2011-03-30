@@ -4,7 +4,7 @@ from usrpm import usrp_dbid
 from gnuradio.eng_option import eng_option
 from gnuradio.qtgui import qtgui
 from PyQt4 import QtGui
-import sys, sip
+import sys, sip, time
 
 class our_test(gr.top_block):
     def __init__(self):
@@ -28,7 +28,7 @@ class our_test(gr.top_block):
         print "Using RX dboard %s" % (self.subdev_rx.side_and_name(),)             
 
         #Set gain.. duh
-        self.subdev_rx.set_gain(3)
+        self.subdev_rx.set_gain(10)
 
         #Tune the center frequency
         self.u_rx.tune(0, self.subdev_rx, frequency)
@@ -43,17 +43,26 @@ class our_test(gr.top_block):
 
         self.snk = gr.probe_avg_mag_sqrd_c(1,0.001)
 
-        dst = audio.sink (sample_rate, "")
-        stv = gr.stream_to_vector (gr.sizeof_float, fft_size)
-        c2m = gr.complex_to_mag_squared (fft_size)
+        # dst = audio.sink (sample_rate, "")
+        # stv = gr.stream_to_vector (gr.sizeof_float, fft_size)
+        # c2m = gr.complex_to_mag_squared (fft_size)
         
         self.connect(self.u_rx, self.snk)
 
 def main():
+    thres = 3
     ot = our_test()
     ot.start()
+    last,a = 0,0
     while 1:
-        print ot.snk.level()
+        tmp = ot.snk.level()
+        if tmp == last:
+            pass
+        else:
+            last = tmp
+            a = ot.snk.level()
+            if a > thres:
+                print "READING -",time.clock(),"at",a
 
 if __name__ == '__main__':
     try:
