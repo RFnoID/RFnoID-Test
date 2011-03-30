@@ -21,6 +21,25 @@ class our_test(gr.top_block):
         fft_size = 256
         freq1 = 3500
         freq2 = 440
+
+        # USRP settings
+        self.u_rx = usrp.source_c() #create the USRP source for RX
+        #try and set the LF_RX for this
+        rx_subdev_spec = usrp.pick_subdev(self.u_rx, (usrp_dbid.LF_RX, usrp_dbid.LF_TX))
+
+        #Configure the MUX for the daughterboard
+        self.u_rx.set_mux(usrp.determine_rx_mux_value(self.u_rx, rx_subdev_spec))
+        #Tell it to use the LF_RX
+        self.subdev_rx = usrp.selected_subdev(self.u_rx, rx_subdev_spec)
+        #Make sure it worked 
+        print "Using RX dboard %s" % (self.subdev_rx.side_and_name(),)             
+
+adc_rate = self.u_rx.adc_rate() #64 MS/s
+usrp_decim = 1024       
+self.u_rx.set_decim_rate(usrp_decim)
+usrp_rx_rate = adc_rate / usrp_decim    #BW = 64 MS/s / decim = 64,000,000 / 1024 = 62.5kHz  Not sure if this decim rate exceeds USRP capabilities, if it does then some software decim may have to be done as well
+
+
         self.src0 = gr.sig_source_f (sample_rate, gr.GR_SIN_WAVE, freq1, ampl)
         self.nse = gr.noise_source_f (gr.GR_GAUSSIAN, 0.1)
         #src1 = gr.sig_source_f (sample_rate, gr.GR_SIN_WAVE, freq2, ampl)
