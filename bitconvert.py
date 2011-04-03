@@ -1,6 +1,7 @@
 #! /usr/bin/python
 from gnuradio.eng_option import eng_option
 import wave
+import pylab
 
 class converter:
     def __init__( self, sr=1e7, t2=2, delay=100 ):
@@ -8,8 +9,8 @@ class converter:
         self.sr = sr/1e6 # should be 10 by default
         self.t2 = t2
         self.delay = delay
-        self.high = [1]
-        self.low = [0]
+        self.high = [0x1]
+        self.low = [0x0]
 
     def convert( self, val ):
         print "Using",self.sr,"samples per microsecond"
@@ -66,19 +67,21 @@ if __name__ == '__main__':
     s52 = conv.convert(52)
     s26 = conv.convert(26)
 
+    print s52[:50]
+
     # make the wave header
     # The tuple should be (nchannels, sampwidth, 
     # framerate, nframes, comptype, compname), 
     # with values valid for the set*() methods.
     # Sets all parameters.
-    f52.setparams((1, 2, conv.sample_rate, \
+    f52.setparams((1, 1, conv.sample_rate, \
                        len(s52), 'NONE', 'NONE'))
-    f26.setparams((1, 2, conv.sample_rate, \
+    f26.setparams((1, 1, conv.sample_rate, \
                        len(s26), 'NONE', 'NONE'))
 
     # write audio frames, without correcting nframes
-    f52.writeframesraw( str(s52) )
-    f26.writeframesraw( str(s26) )
+    f52.writeframes( str(s52) )
+    f26.writeframes( str(s26) )
 
     # done
     f52.close()
