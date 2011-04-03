@@ -1,15 +1,17 @@
 #! /usr/bin/python
 from gnuradio.eng_option import eng_option
+import wave
 
-class convert:
-    def init( self, val, sr=1e7, t2=2 ):
-        self.val = val
+class converter:
+    def init( self, sr=1e7, t2=2, delay=100 ):
+        self.sample_rate = sr
         self.sr = sr/1e6 # should be 10 by default
         self.t2 = t2
+        self.delay = delay
         self.high = [1]
         self.low = [0]
 
-    def convert( self ):
+    def convert( self, val ):
         print "Using",self.sr,"samples per microsecond"
         if val == 52:
             return make_52( 100 )
@@ -40,15 +42,32 @@ class convert:
 
     # make_52( delay=100 )
     # returns Z Z X Y Z X Y X [Y]*delay
-    def make_52( self, delay=100 ):
+    def make_52( self ):
         return self.z() + self.z() + self.x() + self.y() + \
             self.z() + self.x() + self.y() + self.x() + \
-            self.y()*delay
+            self.y()*self.delay
 
     # make_26( delay=100 )
     # returns Z Z X X Y Z X Y Z [Y]*delay
-    def make_26( self, delay=100 ):
+    def make_26( self ):
         return self.z() + self.z() + self.x() + self.x() + \
             self.y() + self.z() + self.x() + self.y() + \
-            self.z() + self.y()*delay
+            self.z() + self.y()*self.delay
 
+if "__name__" == __main__():
+    try:
+        f52 = wave.open("wave52.wav","w")
+        f26 = wave.open("wave26.wav","w")
+    except:
+        print "whoops somethings wrong..."
+    
+    # instantiate the converter class
+    conv = converter(1e7, 2, 100)
+
+    # make the wave header
+    f52.setframerate(conv.sample_rate)
+    f26.setframerate(conv.sample_rate)
+
+    # write audio frames, without correcting nframes
+    f52.writeframesraw(conv.convert(52))
+    f26.writeframesraw(conv.convert(26))
