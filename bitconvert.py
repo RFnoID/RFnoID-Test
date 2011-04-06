@@ -1,7 +1,11 @@
 #! /usr/bin/python
+# requires:
+# sudo apt-get install gnuradio python-numpy python-setuptools g++ python-dev
+# http://pyaudiere.org/
 from gnuradio.eng_option import eng_option
 import wave
 import pylab
+import audiere
 
 class converter:
     def __init__( self, sr=1e7, t2=2, delay=100 ):
@@ -54,6 +58,34 @@ class converter:
         return self.z() + self.z() + self.x() + self.x() + \
             self.y() + self.z() + self.x() + self.y() + \
             self.z() + self.y()*self.delay
+
+    # logic “1” sequence X
+    # logic “0” sequence Y with the following two exceptions:
+    #    i)  If there are two or more contiguous “0”s, sequence Z
+    #        shall be used from the second “0” on
+    #    ii) If the first bit after a “start of frame” is “0” , sequence Z
+    #        shall be used to represent this and any “0”s which follow
+    #        directly thereafter
+    # Start of communication sequence Z
+    # End of communication logic “0” followed by sequence Y
+    # No information at least two sequences Y
+    # make_n returns a NFC 14443-2 compliant stream to be converted
+    # into a wav file given a hex number to parse.
+    def make_n( self, hexn ):
+        out = self.z()
+        pbit = -1
+        binary = list(bin(int(hexn,16))[2:])
+        for b in binary:
+            bit = int(b)
+            if bit == 1:
+                out.append( self.x() )
+            elif bit == 0 and pbit < 1:
+                # two or more contiguous 0's
+                out.append( self.z() )
+            else: # bit is 0 and pbit is 1
+                out.append( self.y() )
+            pbit = bit
+        return out + self.y()*self.delay
 
 if __name__ == '__main__':
     try:
