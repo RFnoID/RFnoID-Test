@@ -13,14 +13,16 @@ class converter:
         self.sr = sr/1e6 # should be 10 by default
         self.t2 = t2
         self.delay = delay
-        self.high = [0x1]
+        self.high = [0x1] # 100% ASK
         self.low = [0x0]
 
     def convert( self, val ):
-        print "Using",self.sr,"samples per microsecond"
+        print "[+] Using",self.sr,"samples per microsecond."
         if val == 52:
+            print "[+] Making 52."
             return self.make_52( )
         elif val == 26:
+            print "[+] Making 26"
             return self.make_26( )
 
     # seq_x( t2, sampling rate )
@@ -59,15 +61,15 @@ class converter:
             self.y() + self.z() + self.x() + self.y() + \
             self.z() + self.y()*self.delay
 
-    # logic “1” sequence X
-    # logic “0” sequence Y with the following two exceptions:
-    #    i)  If there are two or more contiguous “0”s, sequence Z
-    #        shall be used from the second “0” on
-    #    ii) If the first bit after a “start of frame” is “0” , sequence Z
-    #        shall be used to represent this and any “0”s which follow
+    # logic "1" sequence X
+    # logic 0" sequence Y with the following two exceptions:
+    #    i)  If there are two or more contiguous "0"s, sequence Z
+    #        shall be used from the second "0" on
+    #    ii) If the first bit after a "start of frame" is "0" , sequence Z
+    #        shall be used to represent this and any "0"s which follow
     #        directly thereafter
     # Start of communication sequence Z
-    # End of communication logic “0” followed by sequence Y
+    # End of communication logic "0" followed by sequence Y
     # No information at least two sequences Y
     # make_n returns a NFC 14443-2 compliant stream to be converted
     # into a wav file given a hex number to parse.
@@ -94,12 +96,14 @@ if __name__ == '__main__':
     except:
         print "whoops somethings wrong..."
     
-    # instantiate the converter class
+    # instantiate our converter class
     conv = converter(1e7, 2, 100)
     s52 = conv.convert(52)
     s26 = conv.convert(26)
 
-    print s52[:50]
+    print "[+] Attempting to write."
+    print "[+] First 100 frames:"
+    print s52[:100]
 
     # make the wave header
     # The tuple should be (nchannels, sampwidth, 
@@ -112,9 +116,26 @@ if __name__ == '__main__':
                        len(s26), 'NONE', 'NONE'))
 
     # write audio frames, without correcting nframes
-    f52.writeframes( str(s52) )
-    f26.writeframes( str(s26) )
+    for i in range(len(s52)):
+        f52.writeframes( str(s52[i]) )
+
+    for i in range(len(s26)):
+        f26.writeframes( str(s26[i]) )
 
     # done
     f52.close()
     f26.close()
+
+    print "[+] Write succeeded."
+    print "[+] Attempting to read the first 100 frames back."
+
+    # test section: read it back.
+    w = wave.open('wave52.wav','r')
+    l = w.getnframes()
+
+    if l > 100:
+        l = 100
+
+    for i in range(l):
+        print w.readframes(1),
+        w.setpos(i)
