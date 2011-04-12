@@ -12,7 +12,7 @@ class our_test(gr.top_block):
         gr.top_block.__init__(self)
 
         self.frequency = 13.56e6
-        self.gain = 3
+        self.gain = 2
 
         # USRP settings
         self.u_rx = usrp.source_s() #create the USRP source for RX
@@ -52,7 +52,7 @@ class our_test(gr.top_block):
 def main():
     ot = our_test()
     ot.start()
-    thres = round(10**(Decimal(ot.gain)/Decimal(10)),0) * 100
+    thres = round(10**(Decimal(ot.gain)/Decimal(10)),0) * 1000
     print "Threshold is",thres
     last,a,t = 0,0,0
     old_time = 0
