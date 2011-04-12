@@ -23,7 +23,7 @@ class converter:
             print "[+] Making 52."
             return self.make_52( )
         elif val == 26:
-            print "[+] Making 26"
+            print "[+] Making 26."
             return self.make_26( )
 
     # seq_x( t2, sampling rate )
@@ -101,9 +101,9 @@ if __name__ == '__main__':
     conv = converter(1e7, 2, 100)
     s52 = conv.convert(52)
     s26 = conv.convert(26)
-    conv.duration = len(s52)
-    print "[+] Duration",conv.duration
 
+    print "[+] Using 52:"
+    print "[+] Duration",len(s52)
     print "[+] Attempting to write."
     print "[+] First 100 frames:"
     print s52[:100]
@@ -114,10 +114,10 @@ if __name__ == '__main__':
     # with values valid for the set*() methods.
     # Sets all parameters.
     f52.setparams((1, 2, conv.sample_rate, \
-                       conv.sample_rate*conv.duration, \
+                       conv.sample_rate*len(s52), \
                        'NONE', 'noncompressed'))
     f26.setparams((1, 2, conv.sample_rate, \
-                       conv.sample_rate*conv.duration, \
+                       conv.sample_rate*len(s26), \
                        'NONE', 'noncompressed'))
 
     # write audio frames, without correcting nframes
