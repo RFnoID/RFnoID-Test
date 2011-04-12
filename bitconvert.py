@@ -13,8 +13,8 @@ class converter:
         self.sr = sr/1e6 # should be 10 by default
         self.t2 = t2
         self.delay = delay
-        self.high = [0x1] # 100% ASK
-        self.low = [0x0]
+        self.high = [0xFF] # 100% ASK
+        self.low = [0x00]
 
     def convert( self, val ):
         print "[+] Using",self.sr,"samples per microsecond."
@@ -110,12 +110,13 @@ if __name__ == '__main__':
     # framerate, nframes, comptype, compname), 
     # with values valid for the set*() methods.
     # Sets all parameters.
-    f52.setparams((1, 1, conv.sample_rate, \
+    f52.setparams((1, 2, conv.sample_rate, \
                        len(s52), 'NONE', 'NONE'))
-    f26.setparams((1, 1, conv.sample_rate, \
+    f26.setparams((1, 2, conv.sample_rate, \
                        len(s26), 'NONE', 'NONE'))
 
     # write audio frames, without correcting nframes
+    # TODO: http://codingmess.blogspot.com/2008/07/how-to-make-simple-wav-file-with-python.html
     for i in range(len(s52)):
         f52.writeframes( str(s52[i]) )
 
