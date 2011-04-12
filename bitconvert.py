@@ -1,6 +1,6 @@
 #! /usr/bin/python
 # requires:
-# sudo apt-get install gnuradio python-numpy python-setuptools g++ python-dev
+# sudo apt-get install gnuradio python-numpy python-setuptools g++ python-dev libaudiere-dev 
 # http://pyaudiere.org/
 from gnuradio.eng_option import eng_option
 import wave
