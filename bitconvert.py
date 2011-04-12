@@ -8,13 +8,14 @@ import pylab
 import audiere
 
 class converter:
-    def __init__( self, sr=1e7, t2=2, delay=100 ):
+    def __init__( self, sr=1e8, t2=2, delay=100 ):
         self.sample_rate = sr
         self.sr = sr/1e6 # should be 10 by default
         self.t2 = t2
         self.delay = delay
         self.high = [0xFF] # 100% ASK
         self.low = [0x00]
+        self.duration = 0
 
     def convert( self, val ):
         print "[+] Using",self.sr,"samples per microsecond."
@@ -100,6 +101,8 @@ if __name__ == '__main__':
     conv = converter(1e7, 2, 100)
     s52 = conv.convert(52)
     s26 = conv.convert(26)
+    conv.duration = len(s52)
+    print "[+] Duration",conv.duration
 
     print "[+] Attempting to write."
     print "[+] First 100 frames:"
@@ -111,17 +114,19 @@ if __name__ == '__main__':
     # with values valid for the set*() methods.
     # Sets all parameters.
     f52.setparams((1, 2, conv.sample_rate, \
-                       len(s52), 'NONE', 'NONE'))
+                       conv.sample_rate*conv.duration, \
+                       'NONE', 'noncompressed'))
     f26.setparams((1, 2, conv.sample_rate, \
-                       len(s26), 'NONE', 'NONE'))
+                       conv.sample_rate*conv.duration, \
+                       'NONE', 'noncompressed'))
 
     # write audio frames, without correcting nframes
     # TODO: http://codingmess.blogspot.com/2008/07/how-to-make-simple-wav-file-with-python.html
     for i in range(len(s52)):
-        f52.writeframes( str(s52[i]) )
+        f52.writeframes( wave.struct.pack('h', s52[i]) )
 
     for i in range(len(s26)):
-        f26.writeframes( str(s26[i]) )
+        f26.writeframes( wave.struct.pack('h', s26[i]) )
 
     # done
     f52.close()
