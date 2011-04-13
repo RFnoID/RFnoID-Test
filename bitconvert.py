@@ -27,6 +27,8 @@ class converter:
         elif val == 26:
             print "[+] Making 26."
             return self.make_26( )
+        else:
+            return self.make_n( val )
 
     # seq_x( t2, sampling rate )
     # first part = [high]*(sampling rate)*4.72 microseconds times
@@ -79,16 +81,16 @@ class converter:
     def make_n( self, hexn ):
         out = self.z()
         pbit = -1
-        binary = list(bin(int(hexn,16))[2:])
+        binary = list(bin(int(str(hexn),16))[2:])
         for b in binary:
             bit = int(b)
             if bit == 1:
-                out.append( self.x() )
+                out += self.x()
             elif bit == 0 and pbit < 1:
                 # two or more contiguous 0's
-                out.append( self.z() )
+                out += self.z()
             else: # bit is 0 and pbit is 1
-                out.append( self.y() )
+                out += self.y()
             pbit = bit
         return out + self.y()*self.delay
 
@@ -107,8 +109,8 @@ class converter:
 #         self.file.close()
 
 if __name__ == '__main__':
-    f52_file = 'wave52.wav'
-    f26_file = 'wave52.wav'
+    f52_file = 'wave52_n.wav'
+    f26_file = 'wave26_n.wav'
 
     try:
         f52 = wave.open(f52_file,"wb")
