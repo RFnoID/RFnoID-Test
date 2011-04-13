@@ -6,15 +6,17 @@ from gnuradio.eng_option import eng_option
 import wave
 import pylab
 import audiere
+import os
 
 class converter:
-    def __init__( self, sr=1e8, t2=2, delay=100 ):
+    def __init__( self, sr=1e7, t2=2.5, delay=100 ):
         self.sample_rate = sr
-        self.sr = sr/1e6 # should be 10 by default
+        # to get sample rate into microseconds
+        self.sr = sr/1e6
         self.t2 = t2
         self.delay = delay
-        self.high = [0xFF] # 100% ASK
-        self.low = [0x00]
+        self.high = [0x7FFF] # 100% ASK
+        self.low = [0x0000]
         self.duration = 0
 
     def convert( self, val ):
@@ -90,23 +92,46 @@ class converter:
             pbit = bit
         return out + self.y()*self.delay
 
+# class SoundFile:
+#     def  __init__(self, signal, filename, duration=1, samplerate=44100):
+#         self.file = wave.open(filename, 'wb')
+#         self.signal = signal
+#         self.sr = samplerate
+#         self.duration = duration
+  
+#     def write(self):
+#         self.file.setparams((1, 2, self.sr, self.sr*self.duration, 'NONE', 'noncompressed'))
+#         # setparams takes a tuple of:
+#         # nchannels, sampwidth, framerate, nframes, comptype, compname
+#         self.file.writeframes(self.signal)
+#         self.file.close()
+
 if __name__ == '__main__':
+    f52_file = 'wave52.wav'
+    f26_file = 'wave52.wav'
+
     try:
-        f52 = wave.open("wave52.wav","w")
-        f26 = wave.open("wave26.wav","w")
+        f52 = wave.open(f52_file,"wb")
+        f26 = wave.open(f26_file,"wb")
     except:
         print "whoops somethings wrong..."
     
     # instantiate our converter class
-    conv = converter(1e7, 2, 100)
+    # samples/sec, t2 (gap), trailing Ys
+    conv = converter(4e6, 3, 20)
     s52 = conv.convert(52)
     s26 = conv.convert(26)
 
     print "[+] Using 52:"
     print "[+] Duration",len(s52)
-    print "[+] Attempting to write."
     print "[+] First 100 frames:"
     print s52[:100]
+
+    # convert to binary
+    s52_out = "".join((wave.struct.pack('h', item) for item in s52))
+    s26_out = "".join((wave.struct.pack('h', item) for item in s26))
+
+    print "[+] Attempting to write."
 
     # make the wave header
     # The tuple should be (nchannels, sampwidth, 
@@ -114,34 +139,34 @@ if __name__ == '__main__':
     # with values valid for the set*() methods.
     # Sets all parameters.
     f52.setparams((1, 2, conv.sample_rate, \
-                       conv.sample_rate*len(s52), \
-                       'NONE', 'noncompressed'))
+                       len(s52_out), 'NONE', 'not compressed'))
     f26.setparams((1, 2, conv.sample_rate, \
-                       conv.sample_rate*len(s26), \
-                       'NONE', 'noncompressed'))
+                       len(s26_out), 'NONE', 'not compressed'))
 
-    # write audio frames, without correcting nframes
-    # TODO: http://codingmess.blogspot.com/2008/07/how-to-make-simple-wav-file-with-python.html
-    for i in range(len(s52)):
-        f52.writeframes( wave.struct.pack('h', s52[i]) )
-
-    for i in range(len(s26)):
-        f26.writeframes( wave.struct.pack('h', s26[i]) )
+    f52.writeframes( s52_out )
+    f26.writeframes( s26_out )
 
     # done
     f52.close()
     f26.close()
 
     print "[+] Write succeeded."
-    print "[+] Attempting to read the first 100 frames back."
+    print "[+] Attempting to read the first 1,000 frames back."
 
     # test section: read it back.
-    w = wave.open('wave52.wav','r')
+    w = wave.open(f52_file,'r')
     l = w.getnframes()
 
-    if l > 100:
-        l = 100
+    if l > 1000:
+        l = 1000
 
+    printout = ""
     for i in range(l):
-        print w.readframes(1),
+        printout += str(w.readframes(1))
         w.setpos(i)
+
+    f = open("blah","wb")
+    f.write(printout)
+    f.close()
+
+    os.system("hexdump -C blah")

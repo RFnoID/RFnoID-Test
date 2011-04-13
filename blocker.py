@@ -24,7 +24,7 @@ class rx_test(gr.top_block):
         #Tell it to use the LF_RX
         self.subdev_rx = usrp.selected_subdev(self.u_rx, rx_subdev_spec)
         #Make sure it worked 
-        print "Using RX dboard %s" % (self.subdev_rx.side_and_name(),)             
+        print "Using RX dboard %s" % (self.subdev_rx.side_and_name(),)
 
         #Set gain.. duh
         self.subdev_rx.set_gain(self.gain)
@@ -84,18 +84,21 @@ class tx_test(gr.top_block):
         self.connect(self.src, self.conv, self.amp, self.u_tx)
 
 def run_block(rx):
+    aa = time.time()
     rx.stop()
     rx.wait()
     tx = tx_test()
+    print "TIME IN:", time.time() - aa
     block_start = time.time()
     # block for 1 second
-    while( time.time() - block_start < 1 ):
+    print "blocking",
+    while( time.time() - block_start < 5 ):
         # flood 52s
         print ".",
         tx.run()
-        print ","
         # debug
-        time.sleep(0.1)
+    print ""
+    print "waiting."
     tx = None
     return rx
 
@@ -116,6 +119,7 @@ def main():
             rx.start()
         old_time = t
         t = time.clock()
+        aa = 0
         tmp = rx.snk.level()
         if tmp == last:
             pass
@@ -123,14 +127,16 @@ def main():
             last = tmp
             a = rx.snk.level()
             if a > thres:
+                aa = time.time()
                 rx = run_block(rx)
-                print rx
                 rx.start()
                 time_counter += 1
                 if (time.clock() - start_time) < 2:
                     pass
                 else:
                     start_time = time.clock()
+        if aa > 0:
+            print "TIME:",time.time() - aa
         if t != old_time and time_counter > 0:
             print time_counter,"\t@\t",t,"near",a,"mag squared"
             big_time += time_counter

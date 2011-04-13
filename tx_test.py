@@ -13,7 +13,9 @@ class our_test(gr.top_block):
 
         self.frequency = 13.56e6
         self.gain = 100
-        self.usrp_interpol = 128
+        # for 4 MS/s, 32
+        # 
+        self.usrp_interpol = 32
 
         # USRP settings
         self.u_tx = usrp.sink_c() #create the USRP sink for TX
@@ -35,7 +37,8 @@ class our_test(gr.top_block):
         #Tune the center frequency
         self.u_tx.tune(0, self.subdev_tx, self.frequency)
 
-        self.src = gr.wavfile_source("carrier_test_1M.wav", True)
+#        self.src = gr.wavfile_source("RFID_command_52_4M_1610.wav", True)
+        self.src = gr.wavfile_source("wave52.wav", True)
         self.conv = gr.float_to_complex()
         self.amp = gr.multiply_const_cc(10.0 ** (self.gain / 20.0))
         
