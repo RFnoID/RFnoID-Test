@@ -7,9 +7,11 @@ from PyQt4 import QtGui
 from decimal import *
 import sys, sip, time
 
-class rx_test(gr.top_block):
+class receive_path(gr.hier_block2):
     def __init__(self):
-        gr.top_block.__init__(self)
+        gr.hier_block2.__init__(self, "rx_path", 
+                                gr.io_signature(0, 0, 0),
+                                gr.io_signature(0, 0, 0))
 
         self.frequency = 13.56e6
         self.gain = 10
@@ -33,7 +35,7 @@ class rx_test(gr.top_block):
         self.u_rx.tune(0, self.subdev_rx, self.frequency)
 
         adc_rate = self.u_rx.adc_rate() #64 MS/s
-        usrp_decim = 8
+        usrp_decim = 16
         self.u_rx.set_decim_rate(usrp_decim)
         #BW = 64 MS/s / decim = 64,000,000 / 256 = 250 kHz
         #Not sure if this decim rate exceeds USRP capabilities,
@@ -49,12 +51,14 @@ class rx_test(gr.top_block):
         
         self.connect(self.u_rx, self.convert, self.snk)
 
-class tx_test(gr.top_block):
+class transmit_path(gr.hier_block2):
     def __init__(self):
-        gr.top_block.__init__(self)
+        gr.hier_block2.__init__(self, "tx_path", 
+                                gr.io_signature(0, 0, 0),
+                                gr.io_signature(0, 0, 0))
 
         self.frequency = 13.56e6
-        self.gain = 100
+        self.normal_gain = 100
         self.usrp_interpol = 32
 
         # USRP settings
@@ -69,67 +73,64 @@ class tx_test(gr.top_block):
         #Tell it to use the LF_TX
         self.subdev_tx = usrp.selected_subdev(self.u_tx, self.tx_subdev_spec)
         #Make sure it worked 
-        print "Using TX dboard %s" % (self.subdev_tx.side_and_name(),)             
+        print "Using TX dboard %s" % (self.subdev_tx.side_and_name(),)
 
         #Set gain.. duh
-        self.subdev_tx.set_gain(self.gain)
+        self.subdev_tx.set_gain(self.normal_gain)
 
         #Tune the center frequency
         self.u_tx.tune(0, self.subdev_tx, self.frequency)
 
-        self.src = gr.wavfile_source("RFID_command_52_4M_1610.wav", False)
+        self.src = gr.wavfile_source("RFID_command_52_4M_1610.wav", True)
         self.conv = gr.float_to_complex()
-        self.amp = gr.multiply_const_cc(10.0 ** (self.gain / 20.0))
+        self.amp = gr.multiply_const_cc(10.0 ** (self.normal_gain / 20.0))
         
         self.connect(self.src, self.conv, self.amp, self.u_tx)
 
-def run_block(rx):
-    aa = time.time()
-    rx.stop()
-    rx.wait()
-    tx = tx_test()
-    print "TIME IN:", time.time() - aa
-    block_start = time.time()
-    # block for 1 second
-    print "blocking",
-    while( time.time() - block_start < 5 ):
-        # flood 52s
-        print ".",
-        tx.run()
-        # debug
-    print ""
-    print "waiting."
-    tx = None
-    return rx
+    def set_amp(self, enable):
+        if enable:
+            t = self.normal_gain
+        else:
+            t = 0
+        self.amp.set_k( t )
+        print "Within set_amp, gain is",t
 
-# main from receiver
+
+class my_top_block(gr.top_block):
+    def __init__(self):
+        gr.top_block.__init__(self)
+
+        self.tx_path = transmit_path()
+        self.rx_path = receive_path()
+
+        self.connect(self.tx_path)
+        self.connect(self.rx_path)
+
 def main():
-    rx = rx_test()
-    thres = round(10**(Decimal(rx.gain)/Decimal(10)),0) * 100
-    rx = None
+    tb = my_top_block()
+    tb.start()
+    thres = round(10**(Decimal(tb.rx_path.gain)/Decimal(10)),0) * 100
     print "Threshold is",thres
+    tb.tx_path.set_amp(False)
     last,a,t = 0,0,0
     old_time = 0
     time_counter = 0
     start_time = 0
     big_time = 0
     while 1:
-        if not rx:
-            rx = rx_test()
-            rx.start()
         old_time = t
         t = time.clock()
         aa = 0
-        tmp = rx.snk.level()
+        tmp = tb.rx_path.snk.level()
         if tmp == last:
             pass
         else:
             last = tmp
-            a = rx.snk.level()
+            a = tb.rx_path.snk.level()
             if a > thres:
                 aa = time.time()
-                rx = run_block(rx)
-                rx.start()
+                tb.tx_path.set_amp(True)
+                print "Set amp false"
                 time_counter += 1
                 if (time.clock() - start_time) < 2:
                     pass
@@ -144,6 +145,7 @@ def main():
         if (time.clock() - start_time > 2) and big_time > 0:
             print "Total Reads:",big_time
             big_time = 0
+            tb.tx_path.set_amp(False)
 
 if __name__ == '__main__':
     try:
