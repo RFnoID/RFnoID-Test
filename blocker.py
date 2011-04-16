@@ -59,6 +59,7 @@ class transmit_path(gr.hier_block2):
 
         self.frequency = 13.56e6
         self.normal_gain = 100
+        self.k = 0
         self.usrp_interpol = 32
 
         # USRP settings
@@ -81,19 +82,21 @@ class transmit_path(gr.hier_block2):
         #Tune the center frequency
         self.u_tx.tune(0, self.subdev_tx, self.frequency)
 
-        self.src = gr.wavfile_source("RFID_command_52_4M_1610.wav", True)
+        self.src = gr.wavfile_source("wave52.wav", True)
         self.conv = gr.float_to_complex()
         self.amp = gr.multiply_const_cc(10.0 ** (self.normal_gain / 20.0))
         
         self.connect(self.src, self.conv, self.amp, self.u_tx)
 
     def set_amp(self, enable):
+        if self.k == 0:
+            self.k = self.amp.k()
         if enable:
-            t = self.normal_gain
+            t = self.k
         else:
             t = 0
         self.amp.set_k( t )
-        print "Within set_amp, gain is",t
+        print "Within set_amp, k is",t
 
 
 class my_top_block(gr.top_block):
@@ -130,7 +133,7 @@ def main():
             if a > thres:
                 aa = time.time()
                 tb.tx_path.set_amp(True)
-                print "Set amp false"
+                #time.sleep(10)
                 time_counter += 1
                 if (time.clock() - start_time) < 2:
                     pass
