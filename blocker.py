@@ -35,14 +35,14 @@ class receive_path(gr.hier_block2):
         self.u_rx.tune(0, self.subdev_rx, self.frequency)
 
         adc_rate = self.u_rx.adc_rate() #64 MS/s
-        usrp_decim = 8
+        usrp_decim = 1024
         self.u_rx.set_decim_rate(usrp_decim)
         #BW = 64 MS/s / decim = 64,000,000 / 256 = 250 kHz
         #Not sure if this decim rate exceeds USRP capabilities,
         #if it does then some software decim may have to be done as well
         usrp_rx_rate = adc_rate / usrp_decim
 
-        # self.convert = gr.short_to_float()
+        self.iir = gr.single_pole_iir_filter_ff(.001)
         self.mag = gr.complex_to_mag()
         self.snk = gr.probe_signal_f()
 
@@ -50,7 +50,7 @@ class receive_path(gr.hier_block2):
         # stv = gr.stream_to_vector (gr.sizeof_float, fft_size)
         # c2m = gr.complex_to_mag_squared (fft_size)
         
-        self.connect(self.u_rx, self.mag, self.snk)
+        self.connect(self.u_rx, self.mag, self.iir, self.snk)
 
 class transmit_path(gr.hier_block2):
     def __init__(self):
@@ -168,6 +168,7 @@ def main():
             tb.tx_path.set_amp(False)
             print "Sleeping for a second"
             time.sleep(1)
+            print "Awake"
 
 if __name__ == '__main__':
     try:
