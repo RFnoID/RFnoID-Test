@@ -35,7 +35,7 @@ class receive_path(gr.hier_block2):
         self.u_rx.tune(0, self.subdev_rx, self.frequency)
 
         adc_rate = self.u_rx.adc_rate() #64 MS/s
-        usrp_decim = 16
+        usrp_decim = 8
         self.u_rx.set_decim_rate(usrp_decim)
         #BW = 64 MS/s / decim = 64,000,000 / 256 = 250 kHz
         #Not sure if this decim rate exceeds USRP capabilities,
@@ -61,7 +61,7 @@ class transmit_path(gr.hier_block2):
         self.frequency = 13.56e6
         self.normal_gain = 100
         self.k = 0
-        self.usrp_interpol = 32
+        self.usrp_interpol = 128
 
         # USRP settings
         self.u_tx = usrp.sink_c() #create the USRP sink for TX
@@ -161,11 +161,12 @@ def main():
             time_counter = 0
         # print "time.time()-start_time",time.time()-start_time
         # print "big_time",big_time
-        if (time.time() - start_time > 2) and big_time > 0:
+        if (time.time() - start_time > 1) and big_time > 0:
             print "Total Reads:",big_time
             big_time = 0
             # turn off blocking
             tb.tx_path.set_amp(False)
+            print "Sleeping for a second"
             time.sleep(1)
 
 if __name__ == '__main__':
