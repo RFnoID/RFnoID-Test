@@ -112,7 +112,7 @@ class my_top_block(gr.top_block):
 def main():
     tb = my_top_block()
     tb.start()
-    thres = round(10**(Decimal(tb.rx_path.gain)/Decimal(10)),0) * 100
+    thres = round(10**(Decimal(tb.rx_path.gain)/Decimal(10)),0) * 5
     print "Threshold is",thres
     tb.tx_path.set_amp(False)
     last,a,t = 0,0,0
@@ -142,7 +142,7 @@ def main():
         if aa > 0:
             print "TIME:",time.time() - aa
         if t != old_time and time_counter > 0:
-            print time_counter,"\t@\t",t,"near",a,"mag squared"
+            print time_counter,"\t@\t",t,"near",int(a),"\tmag squared"
             big_time += time_counter
             time_counter = 0
         if (time.clock() - start_time > 2) and big_time > 0:
