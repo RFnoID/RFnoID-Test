@@ -9,7 +9,7 @@ import audiere
 import os
 
 class converter:
-    def __init__( self, sr=1e7, t2=2.5, delay=100 ):
+    def __init__( self, sr=4e6, t2=2.5, delay=10000 ):
         self.sample_rate = sr
         # to get sample rate into microseconds
         self.sr = sr/1e6
@@ -22,10 +22,10 @@ class converter:
     def convert( self, val ):
         print "[+] Using",self.sr,"samples per microsecond."
         if val == 52:
-            print "[+] Making 52."
+            print "[+] Making 52 using the build in method."
             return self.make_52( )
         elif val == 26:
-            print "[+] Making 26."
+            print "[+] Making 26 using the build in method."
             return self.make_26( )
         else:
             return self.make_n( val )
@@ -81,7 +81,7 @@ class converter:
     def make_n( self, hexn ):
         out = self.z()
         pbit = -1
-        binary = list(bin(int(str(hexn),16))[2:])
+        binary = list(bin(int(str(hexn),16))[2:]).reverse()
         for b in binary:
             bit = int(b)
             if bit == 1:
@@ -109,8 +109,8 @@ class converter:
 #         self.file.close()
 
 if __name__ == '__main__':
-    f52_file = 'wave52_n.wav'
-    f26_file = 'wave26_n.wav'
+    f52_file = 'wave52.wav'
+    f26_file = 'wave26.wav'
 
     try:
         f52 = wave.open(f52_file,"wb")
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     
     # instantiate our converter class
     # samples/sec, t2 (gap), trailing Ys
-    conv = converter(4e6, 3, 20)
+    conv = converter(4e6, 3, 30)
     s52 = conv.convert(52)
     s26 = conv.convert(26)
 
