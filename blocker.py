@@ -17,7 +17,7 @@ class receive_path(gr.hier_block2):
         self.gain = 10
 
         # USRP settings
-        self.u_rx = usrp.source_s() #create the USRP source for RX
+        self.u_rx = usrp.source_c() #create the USRP source for RX
         #try and set the LF_RX for this
         rx_subdev_spec = usrp.pick_subdev(self.u_rx, (usrp_dbid.LF_RX, usrp_dbid.LF_TX))
 
@@ -42,14 +42,15 @@ class receive_path(gr.hier_block2):
         #if it does then some software decim may have to be done as well
         usrp_rx_rate = adc_rate / usrp_decim
 
-        self.convert = gr.short_to_float()
-        self.snk = gr.probe_avg_mag_sqrd_f(1,0.01)
+        # self.convert = gr.short_to_float()
+        self.mag = gr.complex_to_mag()
+        self.snk = gr.probe_signal_f()
 
         # dst = audio.sink (sample_rate, "")
         # stv = gr.stream_to_vector (gr.sizeof_float, fft_size)
         # c2m = gr.complex_to_mag_squared (fft_size)
         
-        self.connect(self.u_rx, self.convert, self.snk)
+        self.connect(self.u_rx, self.mag, self.snk)
 
 class transmit_path(gr.hier_block2):
     def __init__(self):
@@ -92,11 +93,19 @@ class transmit_path(gr.hier_block2):
         if self.k == 0:
             self.k = self.amp.k()
         if enable:
+            print "Turning blocking on!"
             t = self.k
         else:
+            print "Turning blocking off!"
             t = 0
         self.amp.set_k( t )
         print "Within set_amp, k is",t
+
+    def get_amp(self):
+        # this tells if the amp is on or not
+        # forgive us.
+        # print "Checking amp. We're at",self.amp.k()
+        return abs(self.amp.k()) > 0
 
 
 class my_top_block(gr.top_block):
@@ -112,7 +121,7 @@ class my_top_block(gr.top_block):
 def main():
     tb = my_top_block()
     tb.start()
-    thres = round(10**(Decimal(tb.rx_path.gain)/Decimal(10)),0) * 5
+    thres = round(10**(Decimal(tb.rx_path.gain)/Decimal(10)),0) * 50
     print "Threshold is",thres
     tb.tx_path.set_amp(False)
     last,a,t = 0,0,0
@@ -122,36 +131,45 @@ def main():
     big_time = 0
     while 1:
         old_time = t
-        t = time.clock()
-        aa = 0
+        start_loop_time = time.time()
         tmp = tb.rx_path.snk.level()
         if tmp == last:
             pass
         else:
             last = tmp
-            a = tb.rx_path.snk.level()
-            if a > thres:
-                aa = time.time()
-                tb.tx_path.set_amp(True)
-                #time.sleep(10)
+            this_value = tb.rx_path.snk.level()
+            if this_value > thres:
+                # aa = time.time()
+                # if it's over the threshold
+                # and we ain't blocking
+                # start blocking
+                if not tb.tx_path.get_amp():
+                    tb.tx_path.set_amp(True)
+                # keep track of # of reads over the threshold
+                # for 2 seconds.
                 time_counter += 1
-                if (time.clock() - start_time) < 2:
+                if (time.time() - start_time) < 2:
                     pass
                 else:
-                    start_time = time.clock()
-        if aa > 0:
-            print "TIME:",time.time() - aa
-        if t != old_time and time_counter > 0:
-            print time_counter,"\t@\t",t,"near",int(a),"\tmag squared"
+                    start_time = time.time()
+
+        if start_loop_time != old_time \
+                and time_counter > 0:
+            print time_counter,"\t@\t",t,\
+                "near",int(this_value),"\tmag"
             big_time += time_counter
             time_counter = 0
-        if (time.clock() - start_time > 2) and big_time > 0:
+        # print "time.time()-start_time",time.time()-start_time
+        # print "big_time",big_time
+        if (time.time() - start_time > 2) and big_time > 0:
             print "Total Reads:",big_time
             big_time = 0
+            # turn off blocking
             tb.tx_path.set_amp(False)
+            time.sleep(1)
 
 if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        print "whoops..."
+        print "Done"
