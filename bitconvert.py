@@ -120,7 +120,7 @@ if __name__ == '__main__':
     
     # instantiate our converter class
     # samples/sec, t2 (gap), trailing Ys
-    conv = converter(4e6, 3, 30)
+    conv = converter(1e6, 3, 30)
     s52 = conv.convert(52)
     s26 = conv.convert(26)
 
