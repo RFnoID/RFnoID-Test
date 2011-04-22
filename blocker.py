@@ -213,56 +213,6 @@ class my_top_block(gr.top_block):
         self.connect(self.tx_path)
         self.connect(self.rx_path)
 
-def main():
-    tb = my_top_block()
-    tb.start()
-    thres = round(10**(Decimal(tb.rx_path.gain)/Decimal(10)),0) * 50
-    print "Threshold is",thres
-    tb.tx_path.set_amp(False)
-    last,a,t = 0,0,0
-    old_time = 0
-    time_counter = 0
-    start_time = 0
-    big_time = 0
-    while 1:
-        old_time = t
-        start_loop_time = time.time()
-        tmp = tb.rx_path.snk.level()
-        if tmp == last:
-            pass
-        else:
-            last = tmp
-            this_value = tb.rx_path.snk.level()
-            if this_value > thres:
-                # aa = time.time()
-                # if it's over the threshold
-                # and we ain't blocking
-                # start blocking
-                if not tb.tx_path.get_amp():
-                    tb.tx_path.set_amp(True)
-                # keep track of # of reads over the threshold
-                # for 2 seconds.
-                time_counter += 1
-                if (time.time() - start_time) < 2:
-                    pass
-                else:
-                    start_time = time.time()
-
-        if start_loop_time != old_time \
-                and time_counter > 0:
-          #  print time_counter,"\t@\t",time.clock(),\
-           #     "near",int(this_value),"\tmag"
-            big_time += time_counter
-            time_counter = 0
-        # print "time.time()-start_time",time.time()-start_time
-        # print "big_time",big_time
-        if (time.time() - start_time > 1) and big_time > 0:
-            #print "Total Reads:",big_time
-            big_time = 0
-            # turn off blocking
-            tb.tx_path.set_amp(False)
-            #print "Awake"
-
 def make_wave(sr=1e6):
     print "Using sample rate of",SAMPLERATE
     # if not isinstance(sr, int):
@@ -321,7 +271,7 @@ def make_wave(sr=1e6):
 
     os.system("hexdump -C blah")
 
-if __name__ == '__main__':
+def main():
     usage = "usage: %prog [options]"
     parser = optparse.OptionParser(prog='BLOCKER',
                                    option_class=eng_option,
@@ -337,6 +287,56 @@ if __name__ == '__main__':
     print "[+] Wave created"
     print "[+] Blocker running"
     
+    tb = my_top_block()
+    tb.start()
+    thres = round(10**(Decimal(tb.rx_path.gain)/Decimal(10)),0) * 50
+    print "Threshold is",thres
+    tb.tx_path.set_amp(False)
+    last,a,t = 0,0,0
+    old_time = 0
+    time_counter = 0
+    start_time = 0
+    big_time = 0
+    while 1:
+        old_time = t
+        start_loop_time = time.time()
+        tmp = tb.rx_path.snk.level()
+        if tmp == last:
+            pass
+        else:
+            last = tmp
+            this_value = tb.rx_path.snk.level()
+            if this_value > thres:
+                # aa = time.time()
+                # if it's over the threshold
+                # and we ain't blocking
+                # start blocking
+                if not tb.tx_path.get_amp():
+                    tb.tx_path.set_amp(True)
+                # keep track of # of reads over the threshold
+                # for 2 seconds.
+                time_counter += 1
+                if (time.time() - start_time) < 2:
+                    pass
+                else:
+                    start_time = time.time()
+
+        if start_loop_time != old_time \
+                and time_counter > 0:
+          #  print time_counter,"\t@\t",time.clock(),\
+           #     "near",int(this_value),"\tmag"
+            big_time += time_counter
+            time_counter = 0
+        # print "time.time()-start_time",time.time()-start_time
+        # print "big_time",big_time
+        if (time.time() - start_time > 1) and big_time > 0:
+            #print "Total Reads:",big_time
+            big_time = 0
+            # turn off blocking
+            tb.tx_path.set_amp(False)
+            #print "Awake"
+
+if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
