@@ -12,7 +12,7 @@ import audiere
 import os
 import optparse
 
-global SAMPLERATE
+SAMPLERATE = 0
 
 class converter:
     def __init__( self, sr=1e6, t2=3, delay=30 ):
@@ -194,7 +194,7 @@ class transmit_path(gr.hier_block2):
             #print "Turning blocking off!"
             t = 0
         self.amp.set_k( t )
-        print "Within set_amp, k is",t
+        # print "Within set_amp, k is",t
 
     def get_amp(self):
         # this tells if the amp is on or not
@@ -213,11 +213,11 @@ class my_top_block(gr.top_block):
         self.connect(self.tx_path)
         self.connect(self.rx_path)
 
-def make_wave(sr=1e6):
-    print "Using sample rate of",SAMPLERATE
+def make_wave(sr):
+    print "Using sample rate of",sr
     # if not isinstance(sr, int):
     #     sr = int(sr)
-    conv = converter(SAMPLERATE,3,30)
+    conv = converter(sr,3,30)
     f52_file = 'wave52.wav'
 
     try:
@@ -281,14 +281,17 @@ def main():
     (options, args) = parser.parse_args()
 
     # make the wave52.wav file with the specified sample rate
+    global SAMPLERATE
     SAMPLERATE = options.samplerate
     make_wave( SAMPLERATE )
 
     print "[+] Wave created"
-    print "[+] Blocker running"
     
     tb = my_top_block()
     tb.start()
+
+    print "[+] Blocker and detector running"
+
     thres = round(10**(Decimal(tb.rx_path.gain)/Decimal(10)),0) * 50
     print "Threshold is",thres
     tb.tx_path.set_amp(False)
@@ -297,6 +300,7 @@ def main():
     time_counter = 0
     start_time = 0
     big_time = 0
+    blocking = False
     while 1:
         old_time = t
         start_loop_time = time.time()
@@ -313,8 +317,12 @@ def main():
                 # start blocking
                 if not tb.tx_path.get_amp():
                     tb.tx_path.set_amp(True)
+                    if not blocking:
+                        print "[+] Blocking on"
+                    blocking = True
                 # keep track of # of reads over the threshold
                 # for 2 seconds.
+
                 time_counter += 1
                 if (time.time() - start_time) < 2:
                     pass
@@ -334,6 +342,8 @@ def main():
             big_time = 0
             # turn off blocking
             tb.tx_path.set_amp(False)
+            print "[-] Blocking off"
+            blocking = False
             #print "Awake"
 
 if __name__ == '__main__':
