@@ -1,18 +1,15 @@
-#! /usr/bin/python
 import subprocess, Tkinter, tkFont
-import re
 from graphics import *
 
 master = Tkinter.Tk()
 
 def check():
     tmp = subprocess.Popen('nfc-list', stdout = subprocess.PIPE)
-    x = str(tmp.communicate())
+    x = tmp.communicate()
+    print x
     win = GraphWin()
     shape = Rectangle(Point(150,150), Point(50,50))
-    if "UID" in x:
-        print "Read",re.search("UID",x).group(0)
-    if len(x) > 400:
+    if len(x) > 100:
         color = "green"
     else:
         color = "red"
@@ -20,21 +17,18 @@ def check():
     shape.setFill(color)
     shape.draw(win)
     for i in range(2):
-        try:
-            win.getMouse()
-        except GraphicsError:
-            raise SystemExit
+        win.getMouse()
     win.close()   
 
 def main():
     customFont = tkFont.Font(family="system",size=16,weight="bold")
     button = Tkinter.Button(master,text="Start",command=check,font=customFont)
     button.pack(fill='both', expand=1, padx=20, pady=20)
-    try:
-        master.mainloop()
-    except KeyboardInterrupt:
-        print "Done"
-        raise SystemExit
+    master.mainloop()
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except:
+        print "Done"
+        raise SystemExit

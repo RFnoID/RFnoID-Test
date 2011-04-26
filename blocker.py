@@ -1,9 +1,7 @@
 #! /usr/bin/python
-from gnuradio import gr, gru, audio, eng_notation, window, usrp
+from gnuradio import gr, gru, audio, eng_notation, usrp
 from usrpm import usrp_dbid
 from gnuradio.eng_option import eng_option
-from gnuradio.qtgui import qtgui
-from PyQt4 import QtGui
 from decimal import *
 import sys, sip, time
 import wave
@@ -135,16 +133,15 @@ class receive_path(gr.hier_block2):
         #if it does then some software decim may have to be done as well
         usrp_rx_rate = adc_rate / usrp_decim
 
-        self.iir = gr.single_pole_iir_filter_ff(.53)
+        self.iir = gr.single_pole_iir_filter_ff(.001)
         self.mag = gr.complex_to_mag()
-        self.moving = gr.moving_average_ff(2, 1, 1000)
         self.snk = gr.probe_signal_f()
 
         # dst = audio.sink (sample_rate, "")
         # stv = gr.stream_to_vector (gr.sizeof_float, fft_size)
         # c2m = gr.complex_to_mag_squared (fft_size)
         
-        self.connect(self.u_rx, self.mag, self.moving, self.snk)
+        self.connect(self.u_rx, self.mag, self.iir, self.snk)
 
 class transmit_path(gr.hier_block2):
     def __init__(self):
@@ -198,10 +195,9 @@ class transmit_path(gr.hier_block2):
 
     def get_amp(self):
         # this tells if the amp is on or not
-        # forgive us.
         # print "Checking amp. We're at",self.amp.k()
-        return abs(self.amp.k()) > 0
-
+        # print self.amp.k()
+        return self.amp.k() is 0j
 
 class my_top_block(gr.top_block):
     def __init__(self):
@@ -295,10 +291,11 @@ def main():
     thres = round(10**(Decimal(tb.rx_path.gain)/Decimal(10)),0) * 50
     print "Threshold is",thres
     tb.tx_path.set_amp(False)
+    block_duration = 1
     last,a,t = 0,0,0
     old_time = 0
     time_counter = 0
-    start_time = 0
+    start_time = time.time()
     big_time = 0
     blocking = False
     while 1:
@@ -316,15 +313,17 @@ def main():
                 # and we ain't blocking
                 # start blocking
                 if not tb.tx_path.get_amp():
+                    # print tb.tx_path.get_amp()
                     tb.tx_path.set_amp(True)
                     if not blocking:
+                        start_time = time.time()
                         print "[+] Blocking on"
                     blocking = True
                 # keep track of # of reads over the threshold
                 # for 2 seconds.
 
                 time_counter += 1
-                if (time.time() - start_time) < 2:
+                if (time.time() - start_time) < block_duration:
                     pass
                 else:
                     start_time = time.time()
@@ -337,14 +336,14 @@ def main():
             time_counter = 0
         # print "time.time()-start_time",time.time()-start_time
         # print "big_time",big_time
-        if (time.time() - start_time > 1) and big_time > 0:
+        if (time.time() - start_time > block_duration) and big_time > 0:
             #print "Total Reads:",big_time
             big_time = 0
             # turn off blocking
             tb.tx_path.set_amp(False)
             print "[-] Blocking off"
             blocking = False
-            #print "Awake"
+            time.sleep(.5)
 
 if __name__ == '__main__':
     try:
