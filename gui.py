@@ -12,28 +12,25 @@ class DisShit():
                             height=padding+win_size)
     def check(self):
         tmp = subprocess.Popen(['nfc-mfclassic','r','a','a.mfd'],
-                               stdout = subprocess.PIPE)
+                               stdout = subprocess.PIPE,
+                               stderr = None)
         x = str(tmp.communicate())
         shape = Rectangle(Point(self.padding,self.padding), 
                           Point(self.win_size,self.win_size))
-        if "Done, 64 of 64 blocks read." in x:
-            print "Read",re.search("Done*",x).group(0)
+        if "Done" in x:
             color = "green"
         else:
             color = "red"
         shape.setOutline(color)
         shape.setFill(color)
         shape.draw(self.win)
-        for i in range(2):
-            try:
-                self.win.getMouse()
-            except GraphicsError, KeyboardInterrupt:
-                raise SystemExit
+        if self.win.getMouse():
+            self.check()
         self.win.close()
 
 def main():
     master = Tkinter.Tk()
-    ds = DisShit(500,10)
+    ds = DisShit(700,10)
     customFont = tkFont.Font(family="system",size=16,weight="bold")
     button = Tkinter.Button(master,text="Start",
                             command=ds.check,
